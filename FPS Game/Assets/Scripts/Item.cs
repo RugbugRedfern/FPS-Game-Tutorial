@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Item : MonoBehaviour
+public abstract class Item : MonoBehaviour
 {
 	public ItemInfo itemInfo;
 	public GameObject itemGameObject;
+
+	public abstract void Use();
 }

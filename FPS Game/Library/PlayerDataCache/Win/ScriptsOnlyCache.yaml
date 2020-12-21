@@ -2,7 +2,6 @@ ScriptsOnlyBuild:
   usedScripts:
     Assembly-CSharp.dll:
     - GunInfo
-    - Item
     - Launcher
     - Menu
     - MenuManager
@@ -12,6 +11,7 @@ ScriptsOnlyBuild:
     - PlayerManager
     - RoomListItem
     - RoomManager
+    - SingleShotGun
     PhotonUnityNetworking.dll:
     - Photon.Pun.PhotonTransformView
     - Photon.Pun.PhotonView
@@ -118,61 +118,61 @@ ScriptsOnlyBuild:
     - Class: 108
       Script: {instanceID: 0}
     - Class: 114
-      Script: {instanceID: 14300}
+      Script: {instanceID: 11822}
     - Class: 114
-      Script: {instanceID: 14452}
+      Script: {instanceID: 11846}
     - Class: 114
-      Script: {instanceID: 14540}
+      Script: {instanceID: 12002}
     - Class: 114
-      Script: {instanceID: 14566}
+      Script: {instanceID: 12090}
     - Class: 114
-      Script: {instanceID: 14588}
+      Script: {instanceID: 12116}
     - Class: 114
-      Script: {instanceID: 14678}
+      Script: {instanceID: 12232}
     - Class: 114
-      Script: {instanceID: 14792}
+      Script: {instanceID: 12346}
     - Class: 114
-      Script: {instanceID: 14884}
+      Script: {instanceID: 12440}
     - Class: 114
-      Script: {instanceID: 14932}
+      Script: {instanceID: 12488}
     - Class: 114
-      Script: {instanceID: 15024}
+      Script: {instanceID: 12580}
     - Class: 114
-      Script: {instanceID: 15056}
+      Script: {instanceID: 12612}
     - Class: 114
-      Script: {instanceID: 15134}
+      Script: {instanceID: 12694}
     - Class: 114
-      Script: {instanceID: 15378}
+      Script: {instanceID: 12938}
     - Class: 114
-      Script: {instanceID: 15512}
+      Script: {instanceID: 13132}
     - Class: 114
-      Script: {instanceID: 15574}
+      Script: {instanceID: 13186}
     - Class: 114
-      Script: {instanceID: 15628}
+      Script: {instanceID: 13332}
     - Class: 114
-      Script: {instanceID: 15766}
+      Script: {instanceID: 13348}
     - Class: 114
-      Script: {instanceID: 15780}
+      Script: {instanceID: 13472}
     - Class: 114
-      Script: {instanceID: 15900}
+      Script: {instanceID: 13578}
     - Class: 114
-      Script: {instanceID: 16006}
+      Script: {instanceID: 13592}
+    - Class: 114
+      Script: {instanceID: 13650}
+    - Class: 114
+      Script: {instanceID: 13762}
+    - Class: 114
+      Script: {instanceID: 13834}
+    - Class: 114
+      Script: {instanceID: 13938}
+    - Class: 114
+      Script: {instanceID: 13988}
+    - Class: 114
+      Script: {instanceID: 14020}
+    - Class: 114
+      Script: {instanceID: 14068}
     - Class: 114
       Script: {instanceID: 16018}
-    - Class: 114
-      Script: {instanceID: 16076}
-    - Class: 114
-      Script: {instanceID: 16188}
-    - Class: 114
-      Script: {instanceID: 16258}
-    - Class: 114
-      Script: {instanceID: 16360}
-    - Class: 114
-      Script: {instanceID: 16410}
-    - Class: 114
-      Script: {instanceID: 16442}
-    - Class: 114
-      Script: {instanceID: 16490}
     - Class: 115
       Script: {instanceID: 0}
     - Class: 128
@@ -196,6 +196,12 @@ ScriptsOnlyBuild:
     - Class: 850595691
       Script: {instanceID: 0}
   scriptHashData:
+  - hash:
+      serializedVersion: 2
+      Hash: f087c23fbfa15475a0d110af46fb0496
+    assemblyName: UnityEngine.UI.dll
+    namespaceName: UnityEngine.UI
+    className: Button
   - hash:
       serializedVersion: 2
       Hash: 71bb6a6b6c8f052f948db64c7dd3ca4f
@@ -342,12 +348,6 @@ ScriptsOnlyBuild:
     className: TMP_InputField
   - hash:
       serializedVersion: 2
-      Hash: 07eb88ee94ce3ac5d48345fb3d2c8d66
-    assemblyName: Assembly-CSharp.dll
-    namespaceName: 
-    className: Item
-  - hash:
-      serializedVersion: 2
       Hash: 7ab0e790220bdca831fdd886b339039d
     assemblyName: UnityEngine.UI.dll
     namespaceName: UnityEngine.UI
@@ -444,7 +444,7 @@ ScriptsOnlyBuild:
     className: PhotonRigidbody2DView
   - hash:
       serializedVersion: 2
-      Hash: 1a286079cf1647bc90669bb8cf035be6
+      Hash: 97ef6bf4e3bc4048120649a444e03eb5
     assemblyName: Assembly-CSharp.dll
     namespaceName: 
     className: GunInfo
@@ -586,12 +586,6 @@ ScriptsOnlyBuild:
     assemblyName: Unity.TextMeshPro.dll
     namespaceName: TMPro
     className: TextContainer
-  - hash:
-      serializedVersion: 2
-      Hash: f087c23fbfa15475a0d110af46fb0496
-    assemblyName: UnityEngine.UI.dll
-    namespaceName: UnityEngine.UI
-    className: Button
   - hash:
       serializedVersion: 2
       Hash: c1d728126ff1918728036c59106d32b2
@@ -916,6 +910,12 @@ ScriptsOnlyBuild:
     assemblyName: Unity.Timeline.dll
     namespaceName: UnityEngine.Timeline
     className: PlayableTrack
+  - hash:
+      serializedVersion: 2
+      Hash: 1fbb69543d03c9bba24a10e8db1ad721
+    assemblyName: Assembly-CSharp.dll
+    namespaceName: 
+    className: SingleShotGun
   platform: 5
   scenePathNames:
   - Assets/Scenes/SampleScene.unity

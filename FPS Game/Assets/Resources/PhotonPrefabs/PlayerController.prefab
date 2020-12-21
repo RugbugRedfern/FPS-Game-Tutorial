@@ -201,6 +201,8 @@ MeshRenderer:
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -225,6 +227,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &1488053958305132838
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -311,8 +314,8 @@ MonoBehaviour:
   jumpForce: 300
   smoothTime: 0.15
   items:
-  - {fileID: 4838030529342991591}
-  - {fileID: 2167814752977410730}
+  - {fileID: 6732414030161505931}
+  - {fileID: 3968076902418886796}
 --- !u!1 &2872424139362127188
 GameObject:
   m_ObjectHideFlags: 0
@@ -323,7 +326,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3218887557126065164}
   m_Layer: 0
-  m_Name: Gun2
+  m_Name: PistolObject
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -430,6 +433,8 @@ MeshRenderer:
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -454,6 +459,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &5068796754887890211
 GameObject:
   m_ObjectHideFlags: 0
@@ -463,9 +469,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1676132140338284414}
-  - component: {fileID: 2167814752977410730}
+  - component: {fileID: 3968076902418886796}
   m_Layer: 0
-  m_Name: Gun2Item
+  m_Name: Pistol
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -486,7 +492,7 @@ Transform:
   m_Father: {fileID: 4800001798413963843}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2167814752977410730
+--- !u!114 &3968076902418886796
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -495,11 +501,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 5068796754887890211}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c9a2fc22faf6ad84bb54fb24c0b016d4, type: 3}
+  m_Script: {fileID: 11500000, guid: a549d564930c8f045b462dc9d36d84cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   itemInfo: {fileID: 11400000, guid: 7d265224a6a25bb449941c374d0946a4, type: 2}
   itemGameObject: {fileID: 2872424139362127188}
+  cam: {fileID: 1488053957094389952}
 --- !u!1 &6141460071634955227
 GameObject:
   m_ObjectHideFlags: 0
@@ -510,7 +517,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6859647364140423}
   m_Layer: 0
-  m_Name: Gun1
+  m_Name: RifleObject
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -572,9 +579,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 661285188742022458}
-  - component: {fileID: 4838030529342991591}
+  - component: {fileID: 6732414030161505931}
   m_Layer: 0
-  m_Name: Gun1Item
+  m_Name: Rifle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -595,7 +602,7 @@ Transform:
   m_Father: {fileID: 4800001798413963843}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4838030529342991591
+--- !u!114 &6732414030161505931
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -604,11 +611,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 6444605041853771924}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c9a2fc22faf6ad84bb54fb24c0b016d4, type: 3}
+  m_Script: {fileID: 11500000, guid: a549d564930c8f045b462dc9d36d84cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   itemInfo: {fileID: 11400000, guid: faedfac47be255447ae44e48a73a1423, type: 2}
   itemGameObject: {fileID: 6141460071634955227}
+  cam: {fileID: 1488053957094389952}
 --- !u!1 &8227353499824922674
 GameObject:
   m_ObjectHideFlags: 0
@@ -663,6 +671,8 @@ MeshRenderer:
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -687,3 +697,4 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
