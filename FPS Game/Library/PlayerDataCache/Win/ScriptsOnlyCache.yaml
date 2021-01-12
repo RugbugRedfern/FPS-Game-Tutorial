@@ -12,6 +12,8 @@ ScriptsOnlyBuild:
     - RoomListItem
     - RoomManager
     - SingleShotGun
+    - SpawnManager
+    - Spawnpoint
     PhotonUnityNetworking.dll:
     - Photon.Pun.PhotonTransformView
     - Photon.Pun.PhotonView
@@ -76,6 +78,12 @@ ScriptsOnlyBuild:
       Script: {instanceID: 0}
     - Class: 108
       Script: {instanceID: 0}
+    - Class: 114
+      Script: {instanceID: 12468}
+    - Class: 114
+      Script: {instanceID: 13220}
+    - Class: 115
+      Script: {instanceID: 0}
     - Class: 157
       Script: {instanceID: 0}
     - Class: 196
@@ -84,7 +92,7 @@ ScriptsOnlyBuild:
       Script: {instanceID: 0}
     - Class: 850595691
       Script: {instanceID: 0}
-    Assets/Scenes/SampleScene.unity:
+    Assets/Scenes/Menu.unity:
     - Class: 1
       Script: {instanceID: 0}
     - Class: 4
@@ -134,45 +142,45 @@ ScriptsOnlyBuild:
     - Class: 114
       Script: {instanceID: 12440}
     - Class: 114
-      Script: {instanceID: 12488}
+      Script: {instanceID: 12490}
     - Class: 114
-      Script: {instanceID: 12580}
+      Script: {instanceID: 12516}
     - Class: 114
-      Script: {instanceID: 12612}
+      Script: {instanceID: 12584}
     - Class: 114
-      Script: {instanceID: 12694}
+      Script: {instanceID: 12616}
     - Class: 114
-      Script: {instanceID: 12938}
+      Script: {instanceID: 12698}
     - Class: 114
-      Script: {instanceID: 13132}
+      Script: {instanceID: 12944}
     - Class: 114
-      Script: {instanceID: 13186}
+      Script: {instanceID: 13138}
     - Class: 114
-      Script: {instanceID: 13332}
+      Script: {instanceID: 13192}
     - Class: 114
-      Script: {instanceID: 13348}
+      Script: {instanceID: 13340}
     - Class: 114
-      Script: {instanceID: 13472}
+      Script: {instanceID: 13356}
     - Class: 114
-      Script: {instanceID: 13578}
+      Script: {instanceID: 13480}
     - Class: 114
-      Script: {instanceID: 13592}
+      Script: {instanceID: 13586}
     - Class: 114
-      Script: {instanceID: 13650}
+      Script: {instanceID: 13600}
     - Class: 114
-      Script: {instanceID: 13762}
+      Script: {instanceID: 13658}
     - Class: 114
-      Script: {instanceID: 13834}
+      Script: {instanceID: 13770}
     - Class: 114
-      Script: {instanceID: 13938}
+      Script: {instanceID: 13844}
     - Class: 114
-      Script: {instanceID: 13988}
+      Script: {instanceID: 13948}
     - Class: 114
-      Script: {instanceID: 14020}
+      Script: {instanceID: 13998}
     - Class: 114
-      Script: {instanceID: 14068}
+      Script: {instanceID: 14030}
     - Class: 114
-      Script: {instanceID: 16018}
+      Script: {instanceID: 14078}
     - Class: 115
       Script: {instanceID: 0}
     - Class: 128
@@ -438,6 +446,12 @@ ScriptsOnlyBuild:
     className: Mask
   - hash:
       serializedVersion: 2
+      Hash: 71bb6a6b6c8f052f948db64c7dd3ca4f
+    assemblyName: Assembly-CSharp.dll
+    namespaceName: 
+    className: SpawnManager
+  - hash:
+      serializedVersion: 2
       Hash: 0927e41b46e1bd11671f9b5adda4b832
     assemblyName: PhotonUnityNetworking.dll
     namespaceName: Photon.Pun
@@ -466,6 +480,12 @@ ScriptsOnlyBuild:
     assemblyName: PhotonUnityNetworking.Utilities.dll
     namespaceName: Photon.Pun.UtilityScripts
     className: CullArea
+  - hash:
+      serializedVersion: 2
+      Hash: bcc5d10f40b57cfc98b9f90369ad7056
+    assemblyName: Assembly-CSharp.dll
+    namespaceName: 
+    className: SingleShotGun
   - hash:
       serializedVersion: 2
       Hash: 24f79094aff162c9aa69c31d64d777d3
@@ -610,6 +630,12 @@ ScriptsOnlyBuild:
     assemblyName: UnityEngine.UI.dll
     namespaceName: UnityEngine.UI
     className: VerticalLayoutGroup
+  - hash:
+      serializedVersion: 2
+      Hash: eb02feb4286a5806bb13b9d45da43c95
+    assemblyName: Assembly-CSharp.dll
+    namespaceName: 
+    className: Spawnpoint
   - hash:
       serializedVersion: 2
       Hash: 4ce15e99c635d2567873d27549d1f16f
@@ -910,15 +936,9 @@ ScriptsOnlyBuild:
     assemblyName: Unity.Timeline.dll
     namespaceName: UnityEngine.Timeline
     className: PlayableTrack
-  - hash:
-      serializedVersion: 2
-      Hash: 1fbb69543d03c9bba24a10e8db1ad721
-    assemblyName: Assembly-CSharp.dll
-    namespaceName: 
-    className: SingleShotGun
   platform: 5
   scenePathNames:
-  - Assets/Scenes/SampleScene.unity
+  - Assets/Scenes/Menu.unity
   - Assets/Scenes/Game.unity
   playerPath: C:/Users/Rugbu/Documents/Unity/FPS-Game-Tutorial/FPS Game/Build/FPS
     Game.exe
