@@ -5,7 +5,7 @@ In order to set up the code and get it running, you will have to provide your ow
 # License (Basically, do whatever you want, I don't care, just don't sue me)
 MIT License
 
-Copyright (c) 2020 Red
+Copyright (c) 2021 Rugbug Redfern
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
