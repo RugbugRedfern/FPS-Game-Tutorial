@@ -1,5 +1,5 @@
 # FPS Game Tutorial
-This is the source code for Rugbug Redfern's tutorial series on YouTube: https://www.youtube.com/playlist?list=PLhsVv9Uw1WzjI8fEBjBQpTyXNZ6Yp1ZLw
+This is the source code for [Rugbug Redfern's tutorial series on YouTube](https://www.youtube.com/playlist?list=PLhsVv9Uw1WzjI8fEBjBQpTyXNZ6Yp1ZLw)
 # Setup
 In order to set up the code and get it running, you will have to provide your own Photon AppID in the PhotonServerSettings file. It's free. Watch the first episode of the tutorial series to see how to set it up.
 # License (Basically, do whatever you want, I don't care, just don't sue me)
