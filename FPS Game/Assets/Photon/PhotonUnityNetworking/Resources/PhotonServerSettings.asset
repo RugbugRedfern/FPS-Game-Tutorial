@@ -28,7 +28,7 @@ MonoBehaviour:
     AuthMode: 0
     EnableLobbyStatistics: 0
     NetworkLogging: 1
-  DevRegion: eu
+  DevRegion: tr
   PunLogging: 0
   EnableSupportLogger: 0
   RunInBackground: 1
@@ -42,6 +42,7 @@ MonoBehaviour:
   - RespawnSpaceship
   - RPC_Shoot
   - RPC_TakeDamage
+  - Die
   DisableAutoOpenWizard: 1
   ShowSettings: 0
-  DevRegionSetOnce: 0
+  DevRegionSetOnce: 1

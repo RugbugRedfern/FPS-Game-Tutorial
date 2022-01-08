@@ -5,8 +5,9 @@ using Photon.Pun;
 using UnityEngine;
 using UnityEngine.Animations.Rigging;
 using UnityEngine.Rendering.PostProcessing;
+using UnityEngine.UI;
 
-public class CharacterAimingTest : MonoBehaviour
+public class CharacterAimingTest : MonoBehaviourPunCallbacks, IDamageable
 {
     public float turnSpeed = 20;
 
@@ -38,22 +39,44 @@ public class CharacterAimingTest : MonoBehaviour
 
     RayCastWeaponTest weapon;
 
-    public GameObject  deathText;
+    public GameObject deathText;
+
+    // Jumping
+    Rigidbody rb;
+
+    bool grounded;
+
+    float jumpForce = 300f;
+
+    const float maxHealth = 100f;
+
+    float currentHealth = maxHealth;
+
+    public GameObject crosshair;
+
+    public Image healthbarImage;
 
     private void Awake()
     {
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
+        rb = GetComponent<Rigidbody>();
+        PV = GetComponent<PhotonView>();
     }
 
     // Start is called before the first frame update
     void Start()
     {
         PhotonNetwork.AutomaticallySyncScene = true;
-        PV = GetComponent<PhotonView>();
         mainCamera = Camera.main;
-
         weapon = GetComponentInChildren<RayCastWeaponTest>();
+
+        if (!PV.IsMine)
+        { 
+            Destroy (rb);
+            Destroy (crosshair);
+            Destroy(healthbarImage);
+        }
     }
 
     // Update is called once per frame
@@ -71,6 +94,15 @@ public class CharacterAimingTest : MonoBehaviour
                 turnSpeed * Time.fixedDeltaTime);
 
         OnMouseButtonsPressed();
+        Jump();
+    }
+
+    void Jump()
+    {
+        if (Input.GetKeyDown(KeyCode.Space) && grounded)
+        {
+            rb.AddForce(transform.up * jumpForce);
+        }
     }
 
     public void OnMouseButtonsPressed()
@@ -125,14 +157,45 @@ public class CharacterAimingTest : MonoBehaviour
         flashdistriction.Play();
     }
 
-    public void disableFollowCamera() {
-        vcam.gameObject.SetActive(false);
+    public void disableFollowCamera()
+    {
+        mainCamera.GetComponent<CinemachineBrain>().enabled = false;
     }
 
-    public void enableDeathScreen() {
+    public void enableDeathScreen()
+    {
         PostProcessVolume volume = mainCamera.GetComponent<PostProcessVolume>();
-        volume.enabled = true;
+        volume.profile.settings[1].active = true;
         deathText.SetActive(true);
-        
+    }
+
+    public void SetGroundedState(bool grounded)
+    {
+        this.grounded = grounded;
+    }
+
+    public void TakeDamage(float damage)
+    {
+        PV.RPC("RPC_TakeDamage", RpcTarget.All, damage);
+    }
+
+    [PunRPC]
+    void RPC_TakeDamage(float damage)
+    {
+        if (!PV.IsMine) return;
+        print("Take damage... RPC, " + damage);
+        currentHealth -= damage;
+
+        healthbarImage.fillAmount = currentHealth / maxHealth;
+
+        if (healthbarImage.fillAmount < 0.3)
+        {
+            healthbarImage.color = new Color32(255,0,8,255);
+        }
+
+        if (currentHealth <= 0)
+        {
+            gameObject.GetComponent<TargetTest>().getDeath();
+        }
     }
 }

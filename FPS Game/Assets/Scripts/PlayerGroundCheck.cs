@@ -4,34 +4,34 @@ using UnityEngine;
 
 public class PlayerGroundCheck : MonoBehaviour
 {
-	PlayerController playerController;
+	CharacterAimingTest characterAimingTest;
 
 	void Awake()
 	{
-		playerController = GetComponentInParent<PlayerController>();
+		characterAimingTest = GetComponentInParent<CharacterAimingTest>();
 	}
 
 	void OnTriggerEnter(Collider other)
 	{
-		if(other.gameObject == playerController.gameObject)
+		if(other.gameObject == characterAimingTest.gameObject)
 			return;
 
-		playerController.SetGroundedState(true);
+		characterAimingTest.SetGroundedState(true);
 	}
 
 	void OnTriggerExit(Collider other)
 	{
-		if(other.gameObject == playerController.gameObject)
+		if(other.gameObject == characterAimingTest.gameObject)
 			return;
 
-		playerController.SetGroundedState(false);
+		characterAimingTest.SetGroundedState(false);
 	}
 
 	void OnTriggerStay(Collider other)
 	{
-		if(other.gameObject == playerController.gameObject)
+		if(other.gameObject == characterAimingTest.gameObject)
 			return;
 
-		playerController.SetGroundedState(true);
+		characterAimingTest.SetGroundedState(true);
 	}
 }

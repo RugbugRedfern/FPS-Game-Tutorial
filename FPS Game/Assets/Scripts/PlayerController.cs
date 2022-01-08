@@ -180,24 +180,24 @@ public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
 
 	public void TakeDamage(float damage)
 	{
-		PV.RPC("RPC_TakeDamage", RpcTarget.All, damage);
+		// PV.RPC("RPC_TakeDamage", RpcTarget.All, damage);
 	}
 
-	[PunRPC]
-	void RPC_TakeDamage(float damage)
-	{
-		if(!PV.IsMine)
-			return;
+	// [PunRPC]
+	// void RPC_TakeDamage(float damage)
+	// {
+	// 	if(!PV.IsMine)
+	// 		return;
 
-		currentHealth -= damage;
+	// 	currentHealth -= damage;
 
-		healthbarImage.fillAmount = currentHealth / maxHealth;
+	// 	healthbarImage.fillAmount = currentHealth / maxHealth;
 
-		if(currentHealth <= 0)
-		{
-			Die();
-		}
-	}
+	// 	if(currentHealth <= 0)
+	// 	{
+	// 		Die();
+	// 	}
+	// }
 
 	void Die()
 	{

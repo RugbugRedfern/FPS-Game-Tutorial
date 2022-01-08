@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+
 public class RayCastWeaponTest : MonoBehaviour
 {
     public bool isFiring = false;
@@ -25,6 +26,8 @@ public class RayCastWeaponTest : MonoBehaviour
 
     public AudioClip audioClip;
 
+
+  
     private void Start()
     {
         
@@ -42,14 +45,16 @@ public class RayCastWeaponTest : MonoBehaviour
             (raycastDestination.position - raycastOrigin.position).normalized;
         if (Physics.Raycast(ray, out hitInfo, 100.0f))
         {
-            print("I'm looking at " + hitInfo.transform.name);
+            
+            // print("I'm looking at " + hitInfo.transform.name);
             Debug.DrawLine(ray.origin, hitInfo.point, Color.red, 1.0f);
-            TargetTest target = hitInfo.transform.GetComponent<TargetTest>();
+            var target = hitInfo.collider.gameObject.GetComponent<CharacterAimingTest>();
+            // TargetTest target = hitInfo.transform.GetComponent<TargetTest>();
 
+            hitInfo.collider.gameObject.GetComponent<IDamageable>()?.TakeDamage(15f);
             if (target != null)
             {
-                print(target);
-                target.TakeDamage(15);
+                target.TakeDamage(15f);
                 bloodEffect.transform.position = hitInfo.point;
                 bloodEffect.transform.forward = hitInfo.normal;
                 bloodEffect.Emit(1);
