@@ -30,13 +30,13 @@ namespace Photon.Pun
     public class PunSceneSettings : ScriptableObject
     {
 
-#if UNITY_EDITOR
+        #if UNITY_EDITOR
         // Suppressing compiler warning "this variable is never used". Only used in the CustomEditor, only in Editor
-#pragma warning disable 0414
+        #pragma warning disable 0414
         [SerializeField]
         bool SceneSettingsListFoldoutOpen = true;
-#pragma warning restore 0414
-#endif
+        #pragma warning restore 0414
+        #endif
         
         [SerializeField]
         public List<SceneSetting> MinViewIdPerScene = new List<SceneSetting>();
@@ -84,22 +84,22 @@ namespace Photon.Pun
                     return instanceField;
                 }
 
-                instanceField = (PunSceneSettings) AssetDatabase.LoadAssetAtPath(PunSceneSettingsCsPath, typeof(PunSceneSettings));
+                instanceField = (PunSceneSettings)AssetDatabase.LoadAssetAtPath(PunSceneSettingsCsPath, typeof(PunSceneSettings));
                 if (instanceField == null)
                 {
-                    instanceField = ScriptableObject.CreateInstance<PunSceneSettings>();
-#pragma warning disable 0168
+                    instanceField = CreateInstance<PunSceneSettings>();
+                    #pragma warning disable 0168
                     try
                     {
                         AssetDatabase.CreateAsset(instanceField, PunSceneSettingsCsPath);
                     }
                     catch (Exception e)
                     {
-#if PHOTON_UNITY_NETWORKING
-                        Debug.LogError("-- WARNING: PROJECT CLEANUP NECESSARY -- If you delete pun from your project, make sure you also clean up the Scripting define symbols from any reference to PUN like 'PHOTON_UNITY_NETWORKING ");     
-#endif
+                        #if PHOTON_UNITY_NETWORKING
+                        Debug.LogError("-- WARNING: PROJECT CLEANUP NECESSARY -- If you delete pun from your project, make sure you also clean up the Scripting define symbols from any reference to PUN like 'PHOTON_UNITY_NETWORKING ");
+                        #endif
                     }
-#pragma warning restore 0168
+                    #pragma warning restore 0168
                 }
 
                 return instanceField;
@@ -131,7 +131,7 @@ namespace Photon.Pun
             return 1;
         }
 
-        public static void SanitizeSettings()
+        public static void SanitizeSceneSettings()
         {
             if (Instance == null)
             {

@@ -24,10 +24,8 @@ namespace Photon.Pun
     /// When Using Trigger Parameters, make sure the component that sets the trigger is higher in the stack of Components on the GameObject than 'PhotonAnimatorView'
     /// Triggers are raised true during one frame only.
     /// </remarks>
-    [RequireComponent(typeof(Animator))]
-    [RequireComponent(typeof(PhotonView))]
     [AddComponentMenu("Photon Networking/Photon Animator View")]
-    public class PhotonAnimatorView : MonoBehaviour, IPunObservable
+    public class PhotonAnimatorView : MonoBehaviourPun, IPunObservable
     {
         #region Enums
 
@@ -109,7 +107,6 @@ namespace Photon.Pun
         private Vector3 m_ReceiverPosition;
         private float m_LastDeserializeTime;
         private bool m_WasSynchronizeTypeChanged = true;
-        private PhotonView m_PhotonView;
 
         /// <summary>
         /// Cached raised triggers that are set to be synchronized in discrete mode. since a Trigger only stay up for less than a frame,
@@ -124,13 +121,12 @@ namespace Photon.Pun
 
         private void Awake()
         {
-            this.m_PhotonView = GetComponent<PhotonView>();
             this.m_Animator = GetComponent<Animator>();
         }
 
         private void Update()
         {
-            if (this.m_Animator.applyRootMotion && this.m_PhotonView.IsMine == false && PhotonNetwork.IsConnected == true)
+            if (this.m_Animator.applyRootMotion && this.photonView.IsMine == false && PhotonNetwork.IsConnected == true)
             {
                 this.m_Animator.applyRootMotion = false;
             }
@@ -141,7 +137,7 @@ namespace Photon.Pun
                 return;
             }
 
-            if (this.m_PhotonView.IsMine == true)
+            if (this.photonView.IsMine == true)
             {
                 this.SerializeDataContinuously();
 

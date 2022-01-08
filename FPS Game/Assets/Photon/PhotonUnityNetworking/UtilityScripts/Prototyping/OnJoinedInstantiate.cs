@@ -33,18 +33,33 @@ namespace Photon.Pun.UtilityScripts
 
         // Old field, only here for backwards compat. Value copies over to SpawnPoints in OnValidate
         [HideInInspector] private Transform SpawnPosition;
+
         [HideInInspector] public SpawnSequence Sequence = SpawnSequence.Connection;
+
         [HideInInspector] public List<Transform> SpawnPoints = new List<Transform>(1) { null };
+
+        [Tooltip("Add a random variance to a spawn point position. GetRandomOffset() can be overridden with your own method for producing offsets.")]
         [HideInInspector] public bool UseRandomOffset = true;
+
+        [Tooltip("Radius of the RandomOffset.")]
         [FormerlySerializedAs("PositionOffset")]
         [HideInInspector] public float RandomOffset = 2.0f;
+
+        [Tooltip("Disables the Y axis of RandomOffset. The Y value of the spawn point will be used.")]
+        [HideInInspector] public bool ClampY = true;
+
         [HideInInspector] public List<GameObject> PrefabsToInstantiate = new List<GameObject>(1) { null }; // set in inspector
-        [HideInInspector] [SerializeField] private bool autoSpawnObjects = true;
+
+        [FormerlySerializedAs("autoSpawnObjects")]
+        [HideInInspector] public bool AutoSpawnObjects = true;
 
         #endregion
 
         // Record of spawned objects, used for Despawn All
         public Stack<GameObject> SpawnedObjects = new Stack<GameObject>();
+        protected int spawnedAsActorId;
+
+
 
 #if UNITY_EDITOR
 
@@ -155,13 +170,15 @@ namespace Photon.Pun.UtilityScripts
 
         public virtual void OnJoinedRoom()
         {
-            if (autoSpawnObjects)
+            // Only AutoSpawn if we are a new ActorId. Rejoining should reproduce the objects by server instantiation.
+            if (AutoSpawnObjects && !PhotonNetwork.LocalPlayer.HasRejoined)
+            {
                 SpawnObjects();
+            }
         }
 
         public virtual void SpawnObjects()
         {
-
             if (this.PrefabsToInstantiate != null)
             {
                 foreach (GameObject o in this.PrefabsToInstantiate)
@@ -181,15 +198,24 @@ namespace Photon.Pun.UtilityScripts
             }
         }
 
-        public virtual void DespawnObjects()
+        /// <summary>
+        /// Destroy all objects that have been spawned by this component for this client.
+        /// </summary>
+        /// <param name="localOnly">Use Object.Destroy rather than PhotonNetwork.Destroy.</param>
+        public virtual void DespawnObjects(bool localOnly)
         {
 
             while (SpawnedObjects.Count > 0)
             {
                 var go = SpawnedObjects.Pop();
                 if (go)
-                    PhotonNetwork.Destroy(go);
+                {
+                    if (localOnly)
+                        Object.Destroy(go);
+                    else
+                        PhotonNetwork.Destroy(go);
 
+                }
             }
         }
 
@@ -203,9 +229,10 @@ namespace Photon.Pun.UtilityScripts
         protected int lastUsedSpawnPointIndex = -1;
 
         /// <summary>
-        /// Override this method with any custom code for coming up with a spawn location.
+        /// Gets the next SpawnPoint from the list using the SpawnSequence, and applies RandomOffset (if used) to the transform matrix.
+        /// Override this method with any custom code for coming up with a spawn location. This method is used by AutoSpawn.
         /// </summary>
-        protected virtual void GetSpawnPoint(out Vector3 spawnPos, out Quaternion spawnRot)
+        public virtual void GetSpawnPoint(out Vector3 spawnPos, out Quaternion spawnRot)
         {
 
             // Fetch a point using the Sequence method indicated
@@ -221,18 +248,18 @@ namespace Photon.Pun.UtilityScripts
                 spawnPos = new Vector3(0, 0, 0);
                 spawnRot = new Quaternion(0, 0, 0, 1);
             }
-
-            Vector3 random = Random.insideUnitSphere;
-            random.y = 0;
-            random = random.normalized;
+            
             if (UseRandomOffset)
             {
                 Random.InitState((int)(Time.time * 10000));
-                spawnPos += RandomOffset * random;
+                spawnPos += GetRandomOffset();
             }
         }
+        
 
         /// <summary>
+        /// Get the transform of the next SpawnPoint from the list, selected using the SpawnSequence setting. 
+        /// RandomOffset is not applied, only the transform of the SpawnPoint is returned.
         /// Override this method to change how Spawn Point transform is selected. Return the transform you want to use as a spawn point.
         /// </summary>
         /// <returns></returns>
@@ -271,10 +298,19 @@ namespace Photon.Pun.UtilityScripts
                     default:
                         return null;
                 }
-
             }
         }
 
+        /// <summary>
+        /// When UseRandomeOffset is enabled, this method is called to produce a Vector3 offset. The default implementation clamps the Y value to zero. You may override this with your own implementation.
+        /// </summary>
+        protected virtual Vector3 GetRandomOffset()
+        {
+            Vector3 random = Random.insideUnitSphere;
+            if (ClampY)
+                random.y = 0;
+            return RandomOffset * random.normalized;
+        }
 
     }
 
@@ -285,7 +321,7 @@ namespace Photon.Pun.UtilityScripts
     public class OnJoinedInstantiateEditor : Editor
     {
 
-        SerializedProperty SpawnPoints, PrefabsToInstantiate, UseRandomOffset, RandomOffset, Sequence, autoSpawnObjects;
+        SerializedProperty SpawnPoints, PrefabsToInstantiate, UseRandomOffset, ClampY, RandomOffset, Sequence, autoSpawnObjects;
         GUIStyle fieldBox;
 
         private void OnEnable()
@@ -293,10 +329,11 @@ namespace Photon.Pun.UtilityScripts
             SpawnPoints = serializedObject.FindProperty("SpawnPoints");
             PrefabsToInstantiate = serializedObject.FindProperty("PrefabsToInstantiate");
             UseRandomOffset = serializedObject.FindProperty("UseRandomOffset");
+            ClampY = serializedObject.FindProperty("ClampY");
             RandomOffset = serializedObject.FindProperty("RandomOffset");
             Sequence = serializedObject.FindProperty("Sequence");
 
-            autoSpawnObjects = serializedObject.FindProperty("autoSpawnObjects");
+            autoSpawnObjects = serializedObject.FindProperty("AutoSpawnObjects");
         }
 
         public override void OnInspectorGUI()
@@ -319,7 +356,10 @@ namespace Photon.Pun.UtilityScripts
             EditorGUILayout.PropertyField(Sequence);
             EditorGUILayout.PropertyField(UseRandomOffset);
             if (UseRandomOffset.boolValue)
+            {
                 EditorGUILayout.PropertyField(RandomOffset);
+                EditorGUILayout.PropertyField(ClampY);
+            }
             EditorGUILayout.EndVertical();
 
             /// Auto/Manual Spawn
@@ -359,8 +399,9 @@ namespace Photon.Pun.UtilityScripts
                 }
             }
             else
+            {
                 // List Elements and Delete buttons
-                for (int i = 0; i < list.arraySize; ++i)
+                for (int i = 0; i < count; ++i)
                 {
                     EditorGUILayout.BeginHorizontal();
                     bool add = (GUI.Button(EditorGUILayout.GetControlRect(GUILayout.MaxWidth(20)), "+", (GUIStyle)"minibutton"));
@@ -371,24 +412,39 @@ namespace Photon.Pun.UtilityScripts
 
                     if (add)
                     {
-                        int newindex = list.arraySize;
-                        list.InsertArrayElementAtIndex(i);
-                        list.GetArrayElementAtIndex(i).objectReferenceValue = null;
-                        EditorGUILayout.EndHorizontal();
+                        Add(list, i);
                         break;
                     }
 
                     if (remove)
                     {
                         list.DeleteArrayElementAtIndex(i);
-                        EditorGUILayout.EndHorizontal();
+                        //EditorGUILayout.EndHorizontal();
                         break;
                     }
                 }
 
+                EditorGUILayout.GetControlRect(false, 4);
+                
+                if (GUI.Button(EditorGUILayout.GetControlRect(), "Add", (GUIStyle)"minibutton"))
+                    Add(list, count);
+
+            }
+               
+
             EditorGUILayout.EndVertical();
         }
+
+        private void Add(SerializedProperty list, int i)
+        {
+            {
+                int newindex = list.arraySize;
+                list.InsertArrayElementAtIndex(i);
+                list.GetArrayElementAtIndex(i).objectReferenceValue = null;
+            }
+        }
     }
+   
 
 #endif
 }

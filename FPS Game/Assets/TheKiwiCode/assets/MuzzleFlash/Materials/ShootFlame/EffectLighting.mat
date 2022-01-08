@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: EffectLighting
+  m_Shader: {fileID: 4800000, guid: 9975d8168680a8b4ebc0941cbb57bd17, type: 3}
+  m_ShaderKeywords: 
+  m_LightmapFlags: 5
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _GlowTex:
+        m_Texture: {fileID: 2800000, guid: 45248f60f5a7e654a9b5b83ed9ae25db, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 9f8706a09b0f8b04182e7a73000bd4c7, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - _CoreStrength: 2
+    - _CutOutLightCore: 1
+    - _GlowStrength: 1
+    - _InvFade: 3
+    - _TintStrength: 5
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _CoreColor: {r: 1, g: 1, b: 1, a: 0.5019608}
+    - _GlowColor: {r: 0.7154175, g: 0.66176915, b: 0.99999994, a: 1}
+    - _TintColor: {r: 0.44852942, g: 0.5436106, b: 1, a: 1}
+  m_BuildTextureStacks: []

@@ -46,12 +46,16 @@ namespace Photon.Chat
         /// <summary>(14) Number of message to fetch from history. 0: no history. 1 and higher: number of messages in history. -1: all history.</summary>
         public const byte HistoryLength = 14;
 
+        public const byte DebugMessage = 17;
+
         /// <summary>(21) WebFlags object for changing behaviour of webhooks from client.</summary>
         public const byte WebFlags = 21;
 
-        /// <summary>(22) Properties of channel or user.</summary>
+        /// <summary>(22) WellKnown or custom properties of channel or user.</summary>
         /// <remarks>
-        /// In event <see cref="ChatEventCode.Subscribe"/> it's always channel properties.
+        /// In event <see cref="ChatEventCode.Subscribe"/> it's always channel properties,
+        /// in event <see cref="ChatEventCode.UserSubscribed"/> it's always user properties,
+        /// in event <see cref="ChatEventCode.PropertiesChanged"/> it's channel properties unless <see cref="UserId"/> parameter value is not null
         /// </remarks>
         public const byte Properties = 22;
         /// <summary>(23) Array of UserIds of users already subscribed to a channel.</summary>
@@ -59,5 +63,23 @@ namespace Photon.Chat
         /// Does not include local user who just subscribed.
         /// Maximum length is (<see cref="ChatChannel.MaxSubscribers"/> - 1).</remarks>
         public const byte ChannelSubscribers = 23;
+        /// <summary>(24) Optional data sent in ErrorInfo event from Chat WebHooks. </summary>
+        public const byte DebugData = 24;
+        /// <summary>(25) Code for values to be used for "Check And Swap" (CAS) when changing properties.</summary>
+        public const byte ExpectedValues = 25;
+        /// <summary>(26) Code for broadcast parameter of <see cref="ChatOperationCode.SetProperties"/> method.</summary>
+        public const byte Broadcast = 26;
+        /// <summary>
+        /// WellKnown and custom user properties. 
+        /// </summary>
+        /// <remarks>
+        /// Used only in event <see cref="ChatEventCode.Subscribe"/>
+        /// </remarks>
+        public const byte UserProperties = 28;
+
+        /// <summary>
+        /// Generated unique reusable room id
+        /// </summary>
+        public const byte UniqueRoomId = 29;
     }
 }

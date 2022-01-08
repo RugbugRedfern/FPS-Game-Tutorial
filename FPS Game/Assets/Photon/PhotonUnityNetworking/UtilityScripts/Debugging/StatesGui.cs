@@ -48,7 +48,7 @@ namespace Photon.Pun.UtilityScripts
                 Instance = this;
                 DontDestroyOnLoad(this.gameObject);
             }
-            
+
             if (EventsIn)
             {
                 PhotonNetwork.NetworkingClient.LoadBalancingPeer.TrafficStatsEnabled = true;
@@ -68,10 +68,15 @@ namespace Photon.Pun.UtilityScripts
         float native_height = 480;
         void OnGUI()
         {
+            if (PhotonNetwork.NetworkingClient == null || PhotonNetwork.NetworkingClient.LoadBalancingPeer == null || PhotonNetwork.NetworkingClient.LoadBalancingPeer.TrafficStatsIncoming == null)
+            {
+                return;
+            }
+
             //set up scaling
             float rx = Screen.width / native_width;
             float ry = Screen.height / native_height;
-            GUI.matrix = Matrix4x4.TRS (new Vector3(0, 0, 0), Quaternion.identity, new Vector3 (rx, ry, 1)); 
+            GUI.matrix = Matrix4x4.TRS (new Vector3(0, 0, 0), Quaternion.identity, new Vector3 (rx, ry, 1));
 
             Rect GuiOffsetRuntime = new Rect(this.GuiOffset);
 
@@ -176,6 +181,10 @@ namespace Photon.Pun.UtilityScripts
                 if (PhotonNetwork.IsConnected && PhotonNetwork.InRoom && GUILayout.Button("Leave"))
                 {
                     PhotonNetwork.LeaveRoom();
+                }
+                if (PhotonNetwork.IsConnected && PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom.PlayerTtl>0 && GUILayout.Button("Leave(abandon)"))
+                {
+                    PhotonNetwork.LeaveRoom(false);
                 }
                 if (PhotonNetwork.IsConnected && !PhotonNetwork.InRoom && GUILayout.Button("Join Random"))
                 {

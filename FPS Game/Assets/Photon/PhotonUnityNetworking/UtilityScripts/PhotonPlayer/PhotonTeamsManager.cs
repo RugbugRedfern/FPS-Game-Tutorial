@@ -59,9 +59,8 @@ namespace Photon.Pun.UtilityScripts
 
         private Dictionary<byte, PhotonTeam> teamsByCode;
         private Dictionary<string, PhotonTeam> teamsByName;
-
+        
         /// <summary>The main list of teams with their player-lists. Automatically kept up to date.</summary>
-        /// <remarks>Note that this is static. Can be accessed by PunTeam.PlayersPerTeam. You should not modify this.</remarks>
         private Dictionary<byte, HashSet<Player>> playersPerTeam;
 
         /// <summary>Defines the player custom property name to use for team affinity of "this" player.</summary>
@@ -84,6 +83,7 @@ namespace Photon.Pun.UtilityScripts
                         obj.name = "PhotonTeamsManager";
                         instance = obj.AddComponent<PhotonTeamsManager>();
                     }
+                    instance.Init();
                 }
 
                 return instance;
@@ -96,21 +96,12 @@ namespace Photon.Pun.UtilityScripts
         {
             if (instance == null || ReferenceEquals(this, instance))
             {
+                this.Init();
                 instance = this;
             }
             else
             {
                 Destroy(this);
-                return;
-            }
-            teamsByCode = new Dictionary<byte, PhotonTeam>(teamsList.Count);
-            teamsByName = new Dictionary<string, PhotonTeam>(teamsList.Count);
-            playersPerTeam = new Dictionary<byte, HashSet<Player>>(teamsList.Count);
-            for (int i = 0; i < teamsList.Count; i++)
-            {
-                teamsByCode[teamsList[i].Code] = teamsList[i];
-                teamsByName[teamsList[i].Name] = teamsList[i];
-                playersPerTeam[teamsList[i].Code] = new HashSet<Player>();
             }
         }
 
@@ -123,6 +114,19 @@ namespace Photon.Pun.UtilityScripts
         {
             PhotonNetwork.RemoveCallbackTarget(this);
             this.ClearTeams();
+        }
+
+        private void Init()
+        {
+            teamsByCode = new Dictionary<byte, PhotonTeam>(teamsList.Count);
+            teamsByName = new Dictionary<string, PhotonTeam>(teamsList.Count);
+            playersPerTeam = new Dictionary<byte, HashSet<Player>>(teamsList.Count);
+            for (int i = 0; i < teamsList.Count; i++)
+            {
+                teamsByCode[teamsList[i].Code] = teamsList[i];
+                teamsByName[teamsList[i].Name] = teamsList[i];
+                playersPerTeam[teamsList[i].Code] = new HashSet<Player>();
+            }
         }
 
         #endregion
@@ -484,7 +488,7 @@ namespace Photon.Pun.UtilityScripts
         #endregion
     }
 
-    /// <summary>Extension used for PunTeams and Player class. Wraps access to the player's custom property.</summary>
+    /// <summary>Extension methods for the Player class that make use of PhotonTeamsManager.</summary>
     public static class PhotonTeamExtensions
     {
         /// <summary>Gets the team the player is currently joined to. Null if none.</summary>

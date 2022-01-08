@@ -3,7 +3,156 @@ Photon Realtime C# Client - Changelog
 Exit Games GmbH - www.photonengine.com - forum.photonengine.com
 
 
-Version 4.1.4.0 (27. April 2020 rev5468)
+Version 4.1.6.11 (22. November 2021)
+    Changed: For Unity, PhotonEditorUtils.IsPrefab to use the correct prefab stage utility for Unity 2021.2 and up.
+    Added: CustomAuthenticationType.Epic to authenticate via Epic Online Services (EOS).
+    Added: CustomAuthenticationType.FacebookGaming to authenticate via Facebook Gaming services.
+
+Version 4.1.6.8 (12. October 2021)
+    Changed: CustomTypesUnity. The default Quaternion is now Quaternion.identity (which is a legit Quaterion, as opposed to the previously used new Quaternion). Added const values for each type's byte-size.
+    Added: Checks to avoid creating a player for actorNumber 0.
+    Added: CheckIfOpCanBeSent to OpJoinOrCreateRoom and OpRejoinRoom. Avoids changing state and repeating operation.
+    Removed: Surplus checks if the LoadBalancingPeer is non-null. This is done in CheckIfOpCanBeSent(), too.
+
+Version 4.1.6.7 (27. September 2021)
+    Replaced: Pointer_stringify with UTF8ToString in WebSocket.jslib. It was removed from newer Emscripten versions and is no longer working when exporting from Unity 2021.2. betas. Replaced with UTF8ToString. Tested in 2018.4.x and a current beta.
+    Fixed: Usage of websocketType for console.
+
+Version 4.1.6.6 (17. September 2021)
+    Removed: Usage of class EncryptorNative. This needs to be replaced by EncryptorNativeSource where the Native Socket Plugin should be used.
+    Changed: The Native Socket Plugin can also be used for UDP on Xbox (not in Editor).
+    Removed: CheckConnectSetupXboxOne() as platform requirements were turned into recommendations.
+    Changed: For Xbox, order of checked assemblies when getting Type SocketNativeSource. It's more likely to be in Assembly-CSharp.
+
+Version 4.1.6.5 (24. August 2021)
+    Updated: The default name server host to "ns.photonengine.io". When using WSS on this, it expects TLS1.2 (Win 7 and old Unity versions may not support this).
+    Fixed: Internally used OpJoinRoom() will now send custom room properties (all RoomOptions set) to the Master Server, too. This allows the Master Server to immediately find the room, even if property filtering is used. This was affecting matchmaking with OpJoinOrCreateRoom.
+
+Version 4.1.6.4 (26. July 2021)
+    Internal: Added PhotonEditorTools.HasFusion value and added AppSettings.AppIdFusion as well as ClientAppType.Fusion.
+    Added: ConnectionHandler.DisconnectAfterKeepAlive to let the fallback thread call Disconnect after the KeepAliveInBackground time. Default: false.
+    Changed: ConnectionHandler timer implementation to use a Stopwatch, which is a little more clear about what happens. PUN does not expose this value, so you need to set it in code (change the default).
+    Added: Hashtable specific extension methods StripKeysWithNullValues and StripToStringKeys which allocates less.
+
+Version 4.1.6.3 (06. July 2021)
+    Added: Handling of ErrorCode Invalid Operation (-2) for Authenticate requests. This becomes a DisconnectCause = OperationNotAllowedInCurrentState.
+
+Version 4.1.6.2 (17. June 2021)
+    Changed: The enumeration CustomAuthenticationType was changed to fix naming inconsistencies. Use PlayStation4 and PlayStation5 respectively. Old variants are available as obsolete.
+
+Version 4.1.6.0 (19. May 2021)
+    Changed: As tokenless auth is no longer allowed when using a Name Server, there is now an error log and authentication will not be done from the client. This is not happening in the normal workflow but a precaution to detect issues, should something unpredicted happen.
+    Changed: SupportLogger formatting of the timestamp to include the minutes (if available). Hours will not be logged (so in the logs, there is a wrap around of log-timestamps after 60 min).
+
+Version 4.1.5.4 (13. April 2021)
+    Changed: Connect-methods in the LoadBalancingClient now fail "early" when the peer is already connected. This prevents unintentional modifications of the state and auth token.
+    Added: The LoadBalancingClient will now check if the token is available when the AuthMode 'AuthOnce' or 'AuthOnceWss' require it. If it's not available, the client will log an error and prevent the connection attempt. If this happens, the client is already in a bad state and won't connect anyways.
+
+Version 4.1.5.3 (07. April 2021)
+    Fixed: Protocol Fallback will now connect correctly when a fixed region is set.
+    Changed: ConnectUsingSettings internally sets connectToBestRegion value, based on CloudRegion (equals appSettings.FixedRegion). This avoids pinging when a fixed region is set. Leads to callback OnDisconnected(InvalidRegion).
+
+Version 4.1.5.2 (12. March 2021)
+    Changed: Region pinging will now apply port overrides for the Master Server port for UDP and address-based pinging (in the address and the UDP pings).
+    Changed: The RegionHandler gets the override port from lbc.ServerPortOverrides.MasterServerPort. If it's 0, the default port 5055 is being used.
+    Changed: The LoadBalancingClient.ReplacePortWithAlternative is now static and internal and can be used by the RegionHandler.
+    Added: TargetFramework (of the used dll) to SupportLogger output.
+    Added: Room.GetPlayer() option to find the Master Client, if the id is 0 (which is commonly used as "owned/controlled by the room, so it requires the Master Client).
+
+Version 4.1.5.1 (09. March 2021)
+    Removed: Setting of protocol 1.6 when connecting directly to a Master Server. This was a workaround for older Photon Server SDKs.
+    Note: If you host Photon yourself, you can set the LoadBalancingClient.SerializationProtocol to SerializationProtocol.GpBinaryV16, before you connect.
+    Changed: OpLeaveRoom will now clear the GameServerAddress and private room-entering cache. This cleans the state and prevents accidental success for ReconnectAndRejoinRoom calls.
+    Changed: ReconnectToMaster will check if MasterServerAddress and authToken are known. These are minimum requirements to reconnect to the master (after a connection loss).
+    Added: CustomAuthenticationType.Playstation5 (value 12).
+
+Version 4.1.5.0 (23. February 2021)
+    Added: LoadBalancingClient.ClientType and related code. Defines which sort of AppId should be expected. The LoadBalancingClient supports Realtime and Voice app types. Default: Realtime.
+    Note: This allows using AppSettings for Voice and Realtime clients more easily. ConnectUsingSettings will pick the relevant appid with this info.
+    Moved: EncryptionDataParameters class to become an internal class of the LoadBalancingClient (it was not used outside of LBC).
+    Removed: Room.StorePlayer was trying to calculate the Master Client (and was wrong about it). This triggered a OnMasterClientSwitched() callback in some cases of rejoining a room.
+
+Version 4.1.4.9 (12. January 2021)
+    Internal: EncryptionMode.DatagramEncryptionGCMRandomSequence (12) with .DatagramEncryptionGCM (13).
+    Internal: TokenForInit is now an object instead of a string. This also affects the AuthenticationValues class. This enables the server to send a byte[], which is more effective than a string.
+    Changed: Exposed all RoomOptions in Room class. Room.PublishUserId, Room.DeleteNullProperties.
+    Changed: Room.AutoCleanUp can also be set from room options flag.
+    Internal: EnterRoomParams and OpJoinRoom now use a JoinMode (replacing EnterRoomParams.CreateIfNotExists and EnterRoomParams.RejoinOnly).
+    Fixed: Unity-specific CustomTypes.cs to actually only compile for Unity.
+    Updated: EncryptionMode.DatagramEncryptionGCMRandomSequence (12) with .DatagramEncryptionGCM in the LoadBalancingClient.
+    Added: Room.SetExpectedUsers() to let the server know who's also coming (or no longer coming).
+
+Version 4.1.4.8 (30. November 2020)
+    Added: Conditional compilation in methods which are only for UNITY_WEBGL and UNITY_XBOXONE. The code needed to compile for any platform, even though it should not run anywhere else.
+    Added: Support for UNITY_GAMECORE.
+    Added: Parameter checks for GetGameList (and PUN GetCustomRoomList). The operation is not sent unless the parameters are OK.
+    Added: SupportLogger.OnDestroy to be removed from callback targets.
+    Added: RoomOptions.SuppressPlayerInfo. It can be used to skip join and leave events as well as properties broadcasts in rooms.
+
+Version 4.1.4.7 (25. November 2020)
+    Fixed: It was possible to trigger multiple calls of Authenticate by calling ConnectToRegionMaster(region) multiple times while being connected to the Name Server.
+    Changed: AuthenticationValues.ToString() to expose less data while showing which values are set.
+
+Version 4.1.4.6 (17. November 2020)
+    Added: Unity-specific types will now be registered for de/serialization automatically (in Unity projects) using CustomTypesUnity (in LoadBalancingClient constructor).
+    Note: The Player class needs to reference the current room to deserialize, so it is not a serializable type in the Realtime API (but in PUN). Send the Player.ActorNumber instead and the receiver looks up the ActorNumber in the room.
+    Changed: The client will now call disconnect if any operation response has a ReturnCode == ErrorCode.OperationLimitReached. The resulting OnDisconnect callback gets the new DisconnectCause.DisconnectByOperationLimit value.
+    Added: DisconnectCause.DisconnectByDisconnectMessage. If the server has a "low level" reason to disconnect a client, it can now send a Disconnect Message with some debug info. The LoadBalancingClient will log this message as error and disconnect. When this gets used will be added to the docs.
+    Changed: The BroadcastProperties parameter is now always sent to the Game Server, no matter if there are properties. This fixes a recent issue where UserIds were not broadcast in rooms, if no other player properties were used (see v4.1.4.5 changes).
+    Changed: UseAlternativeUdpPorts is replaced by ServerPortOverrides, which allow configuration of ports per server (including using no override).
+    Changed: UseAlternativeUdpPorts is obsolete and no longer used.
+    Changed: LoadBalancingClient.NameServerPortOverride is now named NameServerPortInAppSettings, which is closer to what it resembles. It is overwritten by the ServerPortOverrides if the nameserver port is > 0 there.
+    Added: Struct PhotonPortDefinition.
+    Added: ReplacePortWithAlternative method to wrap up the replacement as per our address rules.
+    Changed: When the client does not connect initially and EnableProtocolFallback is enabled, the ServerPortOverrides are reset and the fallback protocol will use the default ports for the Name Server (defined per protocol).
+    Changed: ReconnectAndRejoin() no longer affects the value IsUsingNameServer. This is only about reconnecting.
+    Changed: ReconnectAndRejoin() was logging error-level messages for expected situations. Now, there are only warnings in the logs. You can simply check the return value, which is false on error (then you should connect again, as usual).
+    Internal: The pool type for paramDictionaryPool, which is used in OpRaiseEvent. It is now a ParameterDictionary, which will wrap some value-types into pooled objects. This helps avoid some memory allocation.
+    Internal: ParameterCode.Secret is now .Token to match the server naming.
+    Changed: Logging level when OpRaiseEvent fails due to leaving a room. It reports as INFO level, when leaving or disconnecting.
+    Added: Error log for Op Authenticate, if the client does not have a token to authenticate on a Master or Game Server. That token comes from the Name Server and should be automatically present and used. Note: The client will send the auth but may fail due to missing token.
+    Changed: LoadBalancingClient.Disconnect() now checks if the client was just created or is disconnecting already. Those cases won't trigger a callback, so there is no surplus attempt to disconnect the peer. Also, the State does not change. An INFO level debug message helps detect those cases.
+
+Version 4.1.4.5 (02. September 2020)
+    Added: Unity-only ConnectionHandler.StaticReset() to allow entering playmode without domain reload.
+    Added: ErrorCode definition for OperationLimitReached (32743). The client will become unable to call any further operations (to safeguard the room/server) and get disconnected soon after. Currently used for SetProperties only.
+    Fixed: Region pinging for the case that none of the regions answered anything. Then, all region results caused a callback.
+    Added: Support for rooms that suppress room-events.
+    Added: Field bool Room.SuppressRoomEvents to allow checking if room events are suppressed.
+    Changed: If room events are suppressed, the callbacks OnCreatedRoom() and OnJoinedRoom() are now called by the operation response (not waiting for the suppressed events).
+    Renamed: Room.SetRoomFlags() to InternalCacheRoomFlags().
+    Changed: When entering a room, the local players NickName property (255) is not sent if NullOrEmpty.
+    Changed: LoadBalancingApi should not use Unity.Debug unconditionally.
+    Updated: AuthenticationValues reference slightly. Better wording.
+    Updated: Token setter to be protected internal. Only needs to be set by Photon LB API.
+    Fixed: Csproject files for Chat API and LoadBalancing API. The two projects now import the dll based on the current target framework (dynamic).
+
+Version 4.1.4.4 (6. July 2020)
+    Fixed: AppSettings.CopyTo method. It was not copying the new value EnableProtocolFallback yet.
+    Fixed: The date of version 4.1.4.3 in this changelog.
+    Updated: Error handling in PingWindowsStore.
+
+Version 4.1.4.3 (24. June 2020)
+    Added: Check that the Dev Region override is in the list of available regions (from Name Server). If not, the first available region is being used.
+    Changed: RegionPinger.Start() now attempts to use a ThreadPool WorkerItem to ping individual regions. Only if that fails, a separate managed Thread is used. This should help avoid running into Thread limits (if any). Builds for NETFX_CORE don't use this.
+    Changed: Error handling in PingMono. SocketExceptions were not handled entirely.
+    Changed: PhotonPingClasses is no longer used. It's empty and can be removed.
+    Changed: Handling of event LobbyStats in case of LoadBalancingPeer.UseByteArraySlicePoolForEvents. This relates to a new option in the PhotonPeer to use pooled memory (wrapped byte[] basically) when incoming events only contain a byte[]. See changes-library.txt and API reference.
+    Added: Initial puzzle pieces for WSS Proxy support. This is not yet funtional. To actually use the proxy settings, a special WebSocket implementation is needed.
+    Changed: The AppSettings.Port value is now also usable when connecting to a Name Server initially. This allows custom ports on a (custom) Name Server.
+    Added: Various details to the SupportLogger output.
+    Changed: Callback OnCreatedRoom() is now also triggered by the event Join. This is the same trigger as for JoinOrCreateRoom (if that created a new room).
+    Added: Player.HasRejoined value. This is set for the local and remote players and can help define the workflow on ReJoin.
+    Added: LoadBalancingClient.EnableProtocolFallback. If enabled, the client will try another protocol if the initial connect to the Name Server fails.
+    Added: AppSettings.EnableProtocolFallback with a default of true. Used in ConnectUsingSettings to set the client's value accordingly.
+    Internal: Added setting the LoadBalancingClient.Server in Connect and other places, so it should be accurate.
+    Added: Checks for connections on WebGL and Xbox One. Settings that can be corrected (to match the platform's requirements) are corrected with a log note. An Exception is thrown, if the settings can't be corrected automatically. This means Connect methods may throw an Exception in some cases, which are to be fixed during development time.
+
+Version 4.1.4.2 (8. May 2020 - rev5519)
+    Fixed: EventLeave handling. The IsInactive property is to false before doing the OnPlayerLeftRoom callback.
+    Note: Use Player.IsInactive to know the 'reason' for the callback.
+
+Version 4.1.4.0 (27. April 2020 rev5469)
     Fixed: When connecting directly to a Master Server (self hosted), the serialization protocol 1.6 is used (not the detault 1.8). This was changed accidentally in v4.1.3.0 (and thus PUN 2.17).
     Added: Connection state check in CheckIfOpCanBeSent() to fail early if an op can't be sent.
     Updated: WebRPC handling and added an example to the doc of OnWebRpcResponse.
@@ -11,8 +160,8 @@ Version 4.1.4.0 (27. April 2020 rev5468)
     Changed: StripKeysWithNullValues to reuse a list of key with null-values. This causes less allocations and garbage to clean. As a downside, the method now runs only for one thread (even for distinct IDictionary instances). This should not be a problem for the expected use case.
     Changed: The LoadBalancingClient.OnStatusChanged will handle StatusCode.SendError as disconnect due to Exception. Log level INFO should log the inner exception when sending.
     Fixed: Cleanup of the RoomReference for the local player object on disconnect. This prevents issues when setting properties, after joining and leaving a room (back on Master Server).
-	Internal: LoadBalancingClient.ExpectedProtocol is now a nullable property with private setter. It's used internally (only) to switch to the target transport protocol when Authmode AuthOnceWss is "done".
-	Fixed: EventLeave handling. When a player gets removed from the room, the IsInactive property must be set to false before doing the OnPlayerLeftRoom callback. Use Player.IsInactive to know the 'reason' for the callback.
+    Internal: LoadBalancingClient.ExpectedProtocol is now a nullable property with private setter. It's used internally (only) to switch to the target transport protocol when Authmode AuthOnceWss is "done".
+    Fixed: EventLeave handling. When a player gets removed from the room, the IsInactive property must be set to false before doing the OnPlayerLeftRoom callback. Use Player.IsInactive to know the 'reason' for the callback.
 
 Version 4.1.3.0 (23.03.2020 rev5394)
     Changed: Trying to set empty custom properties Hashtable will fail (return false) and log error.
@@ -96,6 +245,9 @@ Version 4.1.2.11 (15. April 2019 - rev5043)
 
 Version 4.1.2.10 (11. March 2019 - rev5023)
     Changed: The cached "best region" is cleared whenever a region's pinging finishes. This fixes a potential issue when the BestRegion value is used before the pinging is done. Then, you end up with a wrong selection.
+    Changed: PhotonPing now reuses the Socket per region.
+    Changed: The RegionHandler now checks #if PING_VIA_COROUTINE to use a coroutine instead of a thread (per region). This is for WebGL exports from Unity.
+    Changed: The SupportLogger now uses a Stopwatch to log the time (not depending on Unity's APIs).
 
 Version 4.1.2.1 (31. July 2018 - rev4787)
     Changed: OnStateChangeAction is now named StateChanged and provides a "previous state" value. State changes only trigger the event-call when the value actually changes.

@@ -1,28 +1,49 @@
-﻿using System;
-using System.Collections;
-using System.Threading;
-
-#if NETFX_CORE
-using System.Diagnostics;
-using Windows.Foundation;
-using Windows.Networking;
-using Windows.Networking.Sockets;
-using Windows.Storage.Streams;
-#endif
-
-#if !NO_SOCKET && !NETFX_CORE
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Net.Sockets;
-#endif
+﻿// ----------------------------------------------------------------------------
+// <copyright file="PhotonPing.cs" company="Exit Games GmbH">
+//   PhotonNetwork Framework for Unity - Copyright (C) 2018 Exit Games GmbH
+// </copyright>
+// <summary>
+// This file includes various PhotonPing implementations for different APIs,
+// platforms and protocols.
+// The RegionPinger class is the instance which selects the Ping implementation
+// to use.
+// </summary>
+// <author>developer@exitgames.com</author>
+// ----------------------------------------------------------------------------
 
 
 namespace Photon.Realtime
 {
+    using System;
+    using System.Collections;
+    using System.Threading;
 
+    #if NETFX_CORE
+    using System.Diagnostics;
+    using Windows.Foundation;
+    using Windows.Networking;
+    using Windows.Networking.Sockets;
+    using Windows.Storage.Streams;
+    #endif
+
+    #if !NO_SOCKET && !NETFX_CORE
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Net.Sockets;
+    #endif
+
+    #if UNITY_WEBGL
+    // import WWW class
+    using UnityEngine;
+    #endif
+
+    /// <summary>
+    /// Abstract implementation of PhotonPing, ase for pinging servers to find the "Best Region".
+    /// </summary>
     public abstract class PhotonPing : IDisposable
     {
         public string DebugString = "";
+        
         public bool Successful;
 
         protected internal bool GotResult;
@@ -33,7 +54,7 @@ namespace Photon.Realtime
 
         protected internal byte PingId;
 
-        private static readonly Random RandomIdProvider = new Random();
+        private static readonly System.Random RandomIdProvider = new System.Random();
 
         public virtual bool StartPing(string ip)
         {
@@ -49,7 +70,6 @@ namespace Photon.Realtime
         {
             throw new NotImplementedException();
         }
-
 
         protected internal void Init()
         {
@@ -90,7 +110,8 @@ namespace Photon.Realtime
                     }
 
                     this.sock.ReceiveTimeout = 5000;
-                    this.sock.Connect(ip, 5055);
+                    int port = (RegionHandler.PortToPingOverride != 0) ? RegionHandler.PortToPingOverride : 5055;
+                    this.sock.Connect(ip, port);
                 }
 
 
@@ -111,15 +132,29 @@ namespace Photon.Realtime
         {
             if (this.GotResult || this.sock == null)
             {
-                return true;
+                return true;    // this just indicates the ping is no longer waiting. this.Successful value defines if the roundtrip completed
             }
 
-            if (!this.sock.Poll(0, SelectMode.SelectRead))
+            int read = 0;
+            try
             {
-                return false;
-            }
+                if (!this.sock.Poll(0, SelectMode.SelectRead))
+                {
+                    return false;
+                }
 
-            int read = this.sock.Receive(this.PingBytes, SocketFlags.None);
+                read = this.sock.Receive(this.PingBytes, SocketFlags.None);
+            }
+            catch (Exception ex)
+            {
+                if (this.sock != null)
+                {
+                    this.sock.Close();
+                    this.sock = null;
+                }
+                this.DebugString += " Exception of socket! " + ex.GetType() + " ";
+                return true;    // this just indicates the ping is no longer waiting. this.Successful value defines if the roundtrip completed
+            }
 
             bool replyMatch = this.PingBytes[this.PingBytes.Length - 1] == this.PingId && read == this.PingLength;
             if (!replyMatch)
@@ -151,7 +186,7 @@ namespace Photon.Realtime
 
 
     #if NETFX_CORE
-    /// <summary>Windows store API implementation of PhotonPing</summary>
+    /// <summary>Windows store API implementation of PhotonPing, based on DatagramSocket for UDP.</summary>
     public class PingWindowsStore : PhotonPing
     {
         private DatagramSocket sock;
@@ -159,54 +194,67 @@ namespace Photon.Realtime
 
         public override bool StartPing(string host)
         {
-            base.Init();
+            lock (this.syncer)
+            {
+                this.Init();
 
-            EndpointPair endPoint = new EndpointPair(null, string.Empty, new HostName(host), "5055");
-            this.sock = new DatagramSocket();
-            this.sock.MessageReceived += OnMessageReceived;
+                int port = (RegionHandler.PortToPingOverride != 0) ? RegionHandler.PortToPingOverride : 5055;
+                EndpointPair endPoint = new EndpointPair(null, string.Empty, new HostName(host), port.ToString());
+                this.sock = new DatagramSocket();
+                this.sock.MessageReceived += this.OnMessageReceived;
 
-            var result = this.sock.ConnectAsync(endPoint);
-            result.Completed = this.OnConnected;
-            this.DebugString += " End StartPing";
-            return true;
+                IAsyncAction result = this.sock.ConnectAsync(endPoint);
+                result.Completed = this.OnConnected;
+                this.DebugString += " End StartPing";
+                return true;
+            }
         }
 
         public override bool Done()
         {
-            return this.GotResult;
+            lock (this.syncer)
+            {
+                return this.GotResult || this.sock == null; // this just indicates the ping is no longer waiting. this.Successful value defines if the roundtrip completed
+            }
         }
 
         public override void Dispose()
         {
-            this.sock = null;
+            lock (this.syncer)
+            {
+                this.sock = null;
+            }
         }
 
         private void OnConnected(IAsyncAction asyncinfo, AsyncStatus asyncstatus)
         {
-            if (asyncinfo.AsTask().IsCompleted)
+            lock (this.syncer)
             {
-                PingBytes[PingBytes.Length - 1] = PingId;
+                if (asyncinfo.AsTask().IsCompleted && !asyncinfo.AsTask().IsFaulted && this.sock != null && this.sock.Information.RemoteAddress != null)
+                {
+                    this.PingBytes[this.PingBytes.Length - 1] = this.PingId;
 
-                DataWriter writer;
-                writer = new DataWriter(sock.OutputStream);
-                writer.WriteBytes(PingBytes);
-                var res = writer.StoreAsync();
-                res.AsTask().Wait(100);
+                    DataWriter writer;
+                    writer = new DataWriter(this.sock.OutputStream);
+                    writer.WriteBytes(this.PingBytes);
+                    DataWriterStoreOperation res = writer.StoreAsync();
+                    res.AsTask().Wait(100);
 
-                writer.DetachStream();
-                writer.Dispose();
+                    this.PingBytes[this.PingBytes.Length - 1] = (byte)(this.PingId + 1); // this buffer is re-used for the result/receive. invalidate the result now.
 
-                PingBytes[PingBytes.Length - 1] = (byte)(PingId - 1);
-            }
-            else
-            {
-                // TODO: handle error
+                    writer.DetachStream();
+                    writer.Dispose();
+                }
+                else
+                {
+                    this.sock = null; // will cause Done() to return true but this.Successful defines if the roundtrip completed
+                }
             }
         }
 
         private void OnMessageReceived(DatagramSocket sender, DatagramSocketMessageReceivedEventArgs args)
         {
-            lock (syncer)
+            lock (this.syncer)
             {
                 DataReader reader = null;
                 try
@@ -215,15 +263,14 @@ namespace Photon.Realtime
                     uint receivedByteCount = reader.UnconsumedBufferLength;
                     if (receivedByteCount > 0)
                     {
-                        var resultBytes = new byte[receivedByteCount];
+                        byte[] resultBytes = new byte[receivedByteCount];
                         reader.ReadBytes(resultBytes);
 
                         //TODO: check result bytes!
 
 
-                        this.Successful = receivedByteCount == PingLength && resultBytes[resultBytes.Length - 1] == PingId;
+                        this.Successful = receivedByteCount == this.PingLength && resultBytes[resultBytes.Length - 1] == this.PingId;
                         this.GotResult = true;
-
                     }
                 }
                 catch
@@ -396,5 +443,38 @@ namespace Photon.Realtime
         }
     }
     #endif
+    #endif
+
+
+    #if UNITY_WEBGL
+    public class PingHttp : PhotonPing
+    {
+        private WWW webRequest;
+
+        public override bool StartPing(string address)
+        {
+            base.Init();
+
+            address = "https://" + address + "/photon/m/?ping&r=" + UnityEngine.Random.Range(0, 10000);
+            this.webRequest = new WWW(address);
+            return true;
+        }
+
+        public override bool Done()
+        {
+            if (this.webRequest.isDone)
+            {
+                Successful = true;
+                return true;
+            }
+
+            return false;
+        }
+
+        public override void Dispose()
+        {
+            this.webRequest.Dispose();
+        }
+    }
     #endif
 }

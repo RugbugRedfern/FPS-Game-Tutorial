@@ -46,7 +46,7 @@ public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
 	{
 		if(PV.IsMine)
 		{
-			EquipItem(0);
+			// EquipItem(0);
 		}
 		else
 		{
@@ -65,41 +65,41 @@ public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
 		Move();
 		Jump();
 
-		for(int i = 0; i < items.Length; i++)
-		{
-			if(Input.GetKeyDown((i + 1).ToString()))
-			{
-				EquipItem(i);
-				break;
-			}
-		}
+		// for(int i = 0; i < items.Length; i++)
+		// {
+		// 	if(Input.GetKeyDown((i + 1).ToString()))
+		// 	{
+		// 		EquipItem(i);
+		// 		break;
+		// 	}
+		// }
 
-		if(Input.GetAxisRaw("Mouse ScrollWheel") > 0f)
-		{
-			if(itemIndex >= items.Length - 1)
-			{
-				EquipItem(0);
-			}
-			else
-			{
-				EquipItem(itemIndex + 1);
-			}
-		}
-		else if(Input.GetAxisRaw("Mouse ScrollWheel") < 0f)
-		{
-			if(itemIndex <= 0)
-			{
-				EquipItem(items.Length - 1);
-			}
-			else
-			{
-				EquipItem(itemIndex - 1);
-			}
-		}
+		// if(Input.GetAxisRaw("Mouse ScrollWheel") > 0f)
+		// {
+		// 	if(itemIndex >= items.Length - 1)
+		// 	{
+		// 		EquipItem(0);
+		// 	}
+		// 	else
+		// 	{
+		// 		EquipItem(itemIndex + 1);
+		// 	}
+		// }
+		// else if(Input.GetAxisRaw("Mouse ScrollWheel") < 0f)
+		// {
+		// 	if(itemIndex <= 0)
+		// 	{
+		// 		EquipItem(items.Length - 1);
+		// 	}
+		// 	else
+		// 	{
+		// 		EquipItem(itemIndex - 1);
+		// 	}
+		// }
 
 		if(Input.GetMouseButtonDown(0))
 		{
-			items[itemIndex].Use();
+			// items[itemIndex].Use();
 		}
 
 		if(transform.position.y < -10f) // Die if you fall out of the world
@@ -133,35 +133,35 @@ public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
 		}
 	}
 
-	void EquipItem(int _index)
-	{
-		if(_index == previousItemIndex)
-			return;
+	// void EquipItem(int _index)
+	// {
+	// 	if(_index == previousItemIndex)
+	// 		return;
 
-		itemIndex = _index;
+	// 	itemIndex = _index;
 
-		items[itemIndex].itemGameObject.SetActive(true);
+	// 	items[itemIndex].itemGameObject.SetActive(true);
 
-		if(previousItemIndex != -1)
-		{
-			items[previousItemIndex].itemGameObject.SetActive(false);
-		}
+	// 	if(previousItemIndex != -1)
+	// 	{
+	// 		items[previousItemIndex].itemGameObject.SetActive(false);
+	// 	}
 
-		previousItemIndex = itemIndex;
+	// 	previousItemIndex = itemIndex;
 
-		if(PV.IsMine)
-		{
-			Hashtable hash = new Hashtable();
-			hash.Add("itemIndex", itemIndex);
-			PhotonNetwork.LocalPlayer.SetCustomProperties(hash);
-		}
-	}
+	// 	if(PV.IsMine)
+	// 	{
+	// 		Hashtable hash = new Hashtable();
+	// 		hash.Add("itemIndex", itemIndex);
+	// 		PhotonNetwork.LocalPlayer.SetCustomProperties(hash);
+	// 	}
+	// }
 
 	public override void OnPlayerPropertiesUpdate(Player targetPlayer, Hashtable changedProps)
 	{
 		if(!PV.IsMine && targetPlayer == PV.Owner)
 		{
-			EquipItem((int)changedProps["itemIndex"]);
+			// EquipItem((int)changedProps["itemIndex"]);
 		}
 	}
 

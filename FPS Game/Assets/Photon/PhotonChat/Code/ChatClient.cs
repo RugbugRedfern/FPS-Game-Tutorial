@@ -12,6 +12,7 @@ namespace Photon.Chat
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using ExitGames.Client.Photon;
 
     #if SUPPORTED_UNITY || NETFX_CORE
@@ -43,6 +44,19 @@ namespace Photon.Chat
 
         /// <summary> Default maximum value possible for <see cref="ChatChannel.MaxSubscribers"/> when <see cref="ChatChannel.PublishSubscribers"/> is enabled</summary>
         public const int DefaultMaxSubscribers = 100;
+
+        private const byte HttpForwardWebFlag = 0x01;
+
+        /// <summary>Enables a fallback to another protocol in case a connect to the Name Server fails.</summary>
+        /// <remarks>
+        /// When connecting to the Name Server fails for a first time, the client will select an alternative
+        /// network protocol and re-try to connect.
+        ///
+        /// The fallback will use the default Name Server port as defined by ProtocolToNameServerPort.
+        ///
+        /// The fallback for TCP is UDP. All other protocols fallback to TCP.
+        /// </remarks>
+        public bool EnableProtocolFallback { get; set; }
 
         /// <summary>The address of last connected Name Server.</summary>
         public string NameServerAddress { get; private set; }
@@ -126,6 +140,16 @@ namespace Photon.Chat
         /// Changing this value, does not affect ChatChannels that are already in use!
         /// </remarks>
         public int MessageLimit;
+
+        /// <summary>Limits the number of messages from private channel histories.</summary>
+        /// <remarks>
+        /// This is applied to all private channels on reconnect, as there is no explicit re-joining private channels.<br/>
+        /// Default is -1, which gets available messages up to a maximum set by the server.<br/>
+        /// A value of 0 gets you zero messages.<br/>
+        /// The server's limit of messages may be lower. If so, the server's value will overrule this.<br/>
+        /// </remarks>
+        public int PrivateChatHistoryLength = -1;
+
         /// <summary> Public channels this client is subscribed to. </summary>
         public readonly Dictionary<string, ChatChannel> PublicChannels;
         /// <summary> Private channels in which this client has exchanged messages. </summary>
@@ -207,6 +231,7 @@ namespace Photon.Chat
             this.PublicChannelsUnsubscribing = new HashSet<string>();
         }
 
+
         public bool ConnectUsingSettings(ChatAppSettings appSettings)
         {
             if (appSettings == null)
@@ -223,13 +248,15 @@ namespace Photon.Chat
             this.DebugOut = appSettings.NetworkLogging;
 
             this.TransportProtocol = appSettings.Protocol;
+            this.EnableProtocolFallback = appSettings.EnableProtocolFallback;
 
             if (!appSettings.IsDefaultNameServer)
             {
                 this.chatPeer.NameServerHost = appSettings.Server;
+                this.chatPeer.NameServerPortOverride = appSettings.Port;
             }
 
-            return this.Connect(appSettings.AppId, appSettings.AppVersion, this.AuthValues);
+            return this.Connect(appSettings.AppIdChat, appSettings.AppVersion, this.AuthValues);
         }
 
         /// <summary>
@@ -244,7 +271,10 @@ namespace Photon.Chat
             this.chatPeer.TimePingInterval = 3000;
             this.DisconnectedCause = ChatDisconnectCause.None;
 
-            this.AuthValues = authValues;
+            if (authValues != null)
+            {
+                this.AuthValues = authValues;
+            }
 
             this.AppId = appId;
             this.AppVersion = appVersion;
@@ -266,6 +296,7 @@ namespace Photon.Chat
             #endif
 
             this.NameServerAddress = this.chatPeer.NameServerAddress;
+
             bool isConnecting = this.chatPeer.Connect();
             if (isConnecting)
             {
@@ -960,6 +991,14 @@ namespace Photon.Chat
                 case ChatEventCode.UserUnsubscribed:
                     this.HandleUserUnsubscribedEvent(eventData);
                     break;
+                #if CHAT_EXTENDED
+                case ChatEventCode.PropertiesChanged:
+                    this.HandlePropertiesChanged(eventData);
+                    break;
+                case ChatEventCode.ErrorInfo:
+                    this.HandleErrorInfoEvent(eventData);
+                    break;
+                #endif
             }
         }
 
@@ -1035,6 +1074,15 @@ namespace Photon.Chat
                 case StatusCode.Disconnect:
                     switch (this.State)
                     {
+                        case ChatState.ConnectWithFallbackProtocol:
+                            this.EnableProtocolFallback = false;        // the client does a fallback only one time
+                            this.chatPeer.NameServerPortOverride = 0;   // resets a value in the peer only (as we change the protocol, the port has to change, too)
+                            this.chatPeer.TransportProtocol = (this.chatPeer.TransportProtocol == ConnectionProtocol.Tcp) ? ConnectionProtocol.Udp : ConnectionProtocol.Tcp;
+                            this.Connect(this.AppId, this.AppVersion, null);
+
+                            // the client now has to return, instead of break, to avoid further processing of the disconnect call
+                            return;
+
                         case ChatState.Authenticated:
                             this.ConnectToFrontEnd();
                             // client disconnected from nameserver after authentication
@@ -1067,7 +1115,18 @@ namespace Photon.Chat
                 case StatusCode.ExceptionOnConnect:
                 case StatusCode.SecurityExceptionOnConnect:
                 case StatusCode.EncryptionFailedToEstablish:
-                    this.Disconnect(ChatDisconnectCause.ExceptionOnConnect);
+                    this.DisconnectedCause = ChatDisconnectCause.ExceptionOnConnect;
+
+                    // if enabled, the client can attempt to connect with another networking-protocol to check if that connects
+                    if (this.EnableProtocolFallback && this.State == ChatState.ConnectingToNameServer)
+                    {
+                        this.State = ChatState.ConnectWithFallbackProtocol;
+                    }
+                    else
+                    {
+                        this.Disconnect(ChatDisconnectCause.ExceptionOnConnect);
+                    }
+
                     break;
                 case StatusCode.Exception:
                 case StatusCode.ExceptionOnReceive:
@@ -1083,7 +1142,17 @@ namespace Photon.Chat
                     this.Disconnect(ChatDisconnectCause.DisconnectByServerReasonUnknown);
                     break;
                 case StatusCode.TimeoutDisconnect:
-                    this.Disconnect(ChatDisconnectCause.ClientTimeout);
+                    this.DisconnectedCause = ChatDisconnectCause.ClientTimeout;
+
+                    // if enabled, the client can attempt to connect with another networking-protocol to check if that connects
+                    if (this.EnableProtocolFallback && this.State == ChatState.ConnectingToNameServer)
+                    {
+                        this.State = ChatState.ConnectWithFallbackProtocol;
+                    }
+                    else
+                    {
+                        this.Disconnect(ChatDisconnectCause.ClientTimeout);
+                    }
                     break;
             }
         }
@@ -1091,8 +1160,31 @@ namespace Photon.Chat
         #if SDK_V4
         void IPhotonPeerListener.OnMessage(object msg)
         {
-            // in v4 interface IPhotonPeerListener
-            return;
+            string channelName = null;
+            var receivedBytes = (byte[])msg;
+            var channelId = BitConverter.ToInt32(receivedBytes, 0);
+            var messageBytes = new byte[receivedBytes.Length - 4];
+            Array.Copy(receivedBytes, 4, messageBytes, 0, receivedBytes.Length - 4);
+
+            foreach (var channel in this.PublicChannels)
+            {
+                if (channel.Value.ChannelID == channelId)
+                {
+                    channelName = channel.Key;
+                    break;
+                }
+            }
+
+            if (channelName != null)
+            {
+                this.listener.DebugReturn(DebugLevel.ALL, string.Format("got OnMessage in channel {0}", channelName));
+            }
+            else
+            {
+                this.listener.DebugReturn(DebugLevel.WARNING, string.Format("got OnMessage in unknown channel {0}", channelId));
+            }
+
+            this.listener.OnReceiveBroadcastMessage(channelName, messageBytes);
         }
         #endif
 
@@ -1102,7 +1194,7 @@ namespace Photon.Chat
         {
             if (!this.didAuthenticate)
             {
-                this.didAuthenticate = this.chatPeer.AuthenticateOnNameServer(this.AppId, this.AppVersion, this.chatRegion, this.AuthValues);
+                this.didAuthenticate = this.chatPeer.AuthenticateOnNameServer(this.AppId, this.AppVersion, this.ChatRegion, this.AuthValues);
                 if (!this.didAuthenticate)
                 {
                     if (this.DebugOut >= DebugLevel.ERROR)
@@ -1182,43 +1274,6 @@ namespace Photon.Chat
         {
             string[] channelsInResponse = (string[])eventData.Parameters[ChatParameterCode.Channels];
             bool[] results = (bool[])eventData.Parameters[ChatParameterCode.SubscribeResults];
-            object temp;
-            if (eventData.Parameters.TryGetValue(ChatParameterCode.Properties, out temp))
-            {
-                Dictionary<object, object> channelProperties = temp as Dictionary<object, object>;
-                if (channelsInResponse.Length == 1)
-                {
-                    if (results[0])
-                    {
-                        string channelName = channelsInResponse[0];
-                        ChatChannel channel;
-                        if (this.PublicChannels.TryGetValue(channelName, out channel))
-                        {
-                            channel.Subscribers.Clear();
-                            channel.ClearProperties();
-                        }
-                        else
-                        {
-                            channel = new ChatChannel(channelName);
-                            channel.MessageLimit = this.MessageLimit;
-                            this.PublicChannels.Add(channel.Name, channel);
-                        }
-                        channel.ReadProperties(channelProperties);
-                        if (channel.PublishSubscribers)
-                        {
-                            channel.Subscribers.Add(this.UserId);
-                            if (eventData.Parameters.TryGetValue(ChatParameterCode.ChannelSubscribers, out temp))
-                            {
-                                string[] subscribers = temp as string[];
-                                channel.AddSubscribers(subscribers);
-                            }
-                        }
-                    }
-                    this.listener.OnSubscribed(channelsInResponse, results);
-                    return;
-                }
-                this.listener.DebugReturn(DebugLevel.ERROR, "Unexpected: Subscribe event for multiple channels with channels properties returned. Ignoring properties.");
-            }
             for (int i = 0; i < channelsInResponse.Length; i++)
             {
                 if (results[i])
@@ -1231,10 +1286,37 @@ namespace Photon.Chat
                         channel.MessageLimit = this.MessageLimit;
                         this.PublicChannels.Add(channel.Name, channel);
                     }
+                    object temp;
+                    if (eventData.Parameters.TryGetValue(ChatParameterCode.Properties, out temp))
+                    {
+                        Dictionary<object, object> channelProperties = temp as Dictionary<object, object>;
+                        channel.ReadChannelProperties(channelProperties);
+                    }
+                    if (channel.PublishSubscribers) // or maybe remove check & always add anyway?
+                    {
+                        channel.Subscribers.Add(this.UserId);
+                    }
+                    if (eventData.Parameters.TryGetValue(ChatParameterCode.ChannelSubscribers, out temp))
+                    {
+                        string[] subscribers = temp as string[];
+                        channel.AddSubscribers(subscribers);
+                    }
+                    #if CHAT_EXTENDED
+                    if (eventData.Parameters.TryGetValue(ChatParameterCode.UserProperties, out temp))
+                    {
+                        Dictionary<string, Dictionary<object, object>> userProperties = temp as Dictionary<string, Dictionary<object, object>>;
+                        foreach (var pair in userProperties)
+                        {
+                            channel.ReadUserProperties(pair.Key, pair.Value);
+                        }
+                    }
+                    #endif
                 }
             }
+
             this.listener.OnSubscribed(channelsInResponse, results);
         }
+
 
         private void HandleUnsubscribeEvent(EventData eventData)
         {
@@ -1356,7 +1438,7 @@ namespace Photon.Chat
             this.listener.OnStatusUpdate(user, status, gotMessage, message);
         }
 
-        private void ConnectToFrontEnd()
+        private bool ConnectToFrontEnd()
         {
             this.State = ChatState.ConnectingToFrontEnd;
 
@@ -1379,24 +1461,32 @@ namespace Photon.Chat
                 {
                     this.listener.DebugReturn(DebugLevel.ERROR, string.Format("Connecting to frontend {0} failed.", this.FrontendAddress));
                 }
+                return false;
             }
+
+            return true;
         }
 
         private bool AuthenticateOnFrontEnd()
         {
             if (this.AuthValues != null)
             {
-                if (string.IsNullOrEmpty(this.AuthValues.Token))
+                if (this.AuthValues.Token == null)
                 {
                     if (this.DebugOut >= DebugLevel.ERROR)
                     {
-                        this.listener.DebugReturn(DebugLevel.ERROR, "Can't authenticate on front end server. Secret is not set");
+                        this.listener.DebugReturn(DebugLevel.ERROR, "Can't authenticate on front end server. Secret (AuthValues.Token) is not set");
                     }
                     return false;
                 }
                 else
                 {
                     Dictionary<byte, object> opParameters = new Dictionary<byte, object> { { (byte)ChatParameterCode.Secret, this.AuthValues.Token } };
+                    if (this.PrivateChatHistoryLength > -1)
+                    {
+                        opParameters[(byte)ChatParameterCode.HistoryLength] = this.PrivateChatHistoryLength;
+                    }
+
                     return this.chatPeer.SendOperation(ChatOperationCode.Authenticate, opParameters, SendOptions.SendReliable);
                 }
             }
@@ -1444,6 +1534,8 @@ namespace Photon.Chat
 
         private void HandleUserSubscribedEvent(EventData eventData)
         {
+            //TODO: Handle user properties!
+
             string channelName = eventData.Parameters[ChatParameterCode.Channel] as string;
             string userId = eventData.Parameters[ChatParameterCode.UserId] as string;
             ChatChannel channel;
@@ -1488,7 +1580,7 @@ namespace Photon.Chat
         /// </summary>
         /// <param name="channel">name of the channel to subscribe to</param>
         /// <param name="lastMsgId">ID of the last received message from this channel when re subscribing to receive only missed messages, default is 0</param>
-        /// <param name="messagesFromHistory">how many missed messages to receive from history, default is none/-1</param>
+        /// <param name="messagesFromHistory">how many missed messages to receive from history, default is -1 (available history). 0 will get you no items. Positive values are capped by a server side limit.</param>
         /// <param name="creationOptions">options to be used in case the channel to subscribe to will be created.</param>
         /// <returns></returns>
         public bool Subscribe(string channel, int lastMsgId = 0, int messagesFromHistory = -1, ChannelCreationOptions creationOptions = null)
@@ -1554,6 +1646,15 @@ namespace Photon.Chat
                 }
                 properties[ChannelWellKnownProperties.MaxSubscribers] = maxSubscribers;
             }
+            #if CHAT_EXTENDED
+            if (creationOptions.CustomProperties != null && creationOptions.CustomProperties.Count > 0)
+            {
+                foreach (var pair in creationOptions.CustomProperties)
+                {
+                    properties.Add(pair.Key, pair.Value);
+                }
+            }
+            #endif
             Dictionary<byte, object> opParameters = new Dictionary<byte, object> { { ChatParameterCode.Channels, new[] { channel } } };
             if (messagesFromHistory != 0)
             {
@@ -1570,5 +1671,158 @@ namespace Photon.Chat
 
             return this.chatPeer.SendOperation(ChatOperationCode.Subscribe, opParameters, SendOptions.SendReliable);
         }
+
+        #if CHAT_EXTENDED
+
+        internal bool SetChannelProperties(string channelName, Dictionary<object, object> channelProperties, Dictionary<object, object> expectedProperties = null, bool httpForward = false)
+        {
+            if (!this.CanChat)
+            {
+                this.listener.DebugReturn(DebugLevel.ERROR, "SetChannelProperties called while not connected to front end server.");
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(channelName) || channelProperties == null || channelProperties.Count == 0)
+            {
+                this.listener.DebugReturn(DebugLevel.WARNING, "SetChannelProperties parameters must be non-null and not empty.");
+                return false;
+            }
+            Dictionary<byte, object> parameters = new Dictionary<byte, object>
+                                                  {
+                                                      { ChatParameterCode.Channel, channelName },
+                                                      { ChatParameterCode.Properties, channelProperties },
+                                                      { ChatParameterCode.Broadcast, true }
+                                                  };
+            if (httpForward)
+            {
+                parameters.Add(ChatParameterCode.WebFlags, HttpForwardWebFlag);
+            }
+            if (expectedProperties != null && expectedProperties.Count > 0)
+            {
+                parameters.Add(ChatParameterCode.ExpectedValues, expectedProperties);
+            }
+            return this.chatPeer.SendOperation(ChatOperationCode.SetProperties, parameters, SendOptions.SendReliable);
+        }
+
+        public bool SetCustomChannelProperties(string channelName, Dictionary<string, object> channelProperties, Dictionary<string, object> expectedProperties = null, bool httpForward = false)
+        {
+            if (channelProperties != null && channelProperties.Count > 0)
+            {
+                Dictionary<object, object> properties = new Dictionary<object, object>(channelProperties.Count);
+                foreach (var pair in channelProperties)
+                {
+                    properties.Add(pair.Key, pair.Value);
+                }
+                Dictionary<object, object> expected = null;
+                if (expectedProperties != null && expectedProperties.Count > 0)
+                {
+                    expected = new Dictionary<object, object>(expectedProperties.Count);
+                    foreach (var pair in expectedProperties)
+                    {
+                        expected.Add(pair.Key, pair.Value);
+                    }
+                }
+                return this.SetChannelProperties(channelName, properties, expected, httpForward);
+            }
+            return this.SetChannelProperties(channelName, null);
+        }
+
+        public bool SetCustomUserProperties(string channelName, string userId, Dictionary<string, object> userProperties, Dictionary<string, object> expectedProperties = null, bool httpForward = false)
+        {
+            if (userProperties != null && userProperties.Count > 0)
+            {
+                Dictionary<object, object> properties = new Dictionary<object, object>(userProperties.Count);
+                foreach (var pair in userProperties)
+                {
+                    properties.Add(pair.Key, pair.Value);
+                }
+                Dictionary<object, object> expected = null;
+                if (expectedProperties != null && expectedProperties.Count > 0)
+                {
+                    expected = new Dictionary<object, object>(expectedProperties.Count);
+                    foreach (var pair in expectedProperties)
+                    {
+                        expected.Add(pair.Key, pair.Value);
+                    }
+                }
+                return this.SetUserProperties(channelName, userId, properties, expected, httpForward);
+            }
+            return this.SetUserProperties(channelName, userId, null);
+        }
+
+        internal bool SetUserProperties(string channelName, string userId, Dictionary<object, object> channelProperties, Dictionary<object, object> expectedProperties = null, bool httpForward = false)
+        {
+            if (!this.CanChat)
+            {
+                this.listener.DebugReturn(DebugLevel.ERROR, "SetUserProperties called while not connected to front end server.");
+                return false;
+            }
+            if (string.IsNullOrEmpty(channelName))
+            {
+                this.listener.DebugReturn(DebugLevel.WARNING, "SetUserProperties \"channelName\" parameter must be non-null and not empty.");
+                return false;
+            }
+            if (channelProperties == null || channelProperties.Count == 0)
+            {
+                this.listener.DebugReturn(DebugLevel.WARNING, "SetUserProperties \"channelProperties\" parameter must be non-null and not empty.");
+                return false;
+            }
+            if (string.IsNullOrEmpty(userId))
+            {
+                this.listener.DebugReturn(DebugLevel.WARNING, "SetUserProperties \"userId\" parameter must be non-null and not empty.");
+                return false;
+            }
+            Dictionary<byte, object> parameters = new Dictionary<byte, object>
+                                                  {
+                                                      { ChatParameterCode.Channel, channelName },
+                                                      { ChatParameterCode.Properties, channelProperties },
+                                                      { ChatParameterCode.UserId, userId },
+                                                      { ChatParameterCode.Broadcast, true }
+                                                  };
+            if (httpForward)
+            {
+                parameters.Add(ChatParameterCode.WebFlags, HttpForwardWebFlag);
+            }
+            if (expectedProperties != null && expectedProperties.Count > 0)
+            {
+                parameters.Add(ChatParameterCode.ExpectedValues, expectedProperties);
+            }
+            return this.chatPeer.SendOperation(ChatOperationCode.SetProperties, parameters, SendOptions.SendReliable);
+        }
+
+        private void HandlePropertiesChanged(EventData eventData)
+        {
+            string channelName = eventData.Parameters[ChatParameterCode.Channel] as string;
+            ChatChannel channel;
+            if (!this.PublicChannels.TryGetValue(channelName, out channel))
+            {
+                this.listener.DebugReturn(DebugLevel.WARNING, string.Format("Channel {0} for incoming ChannelPropertiesUpdated event not found.", channelName));
+                return;
+            }
+            string senderId = eventData.Parameters[ChatParameterCode.Sender] as string;
+            Dictionary<object, object> changedProperties = eventData.Parameters[ChatParameterCode.Properties] as Dictionary<object, object>;
+            object temp;
+            if (eventData.Parameters.TryGetValue(ChatParameterCode.UserId, out temp))
+            {
+                string targetUserId = temp as string;
+                channel.ReadUserProperties(targetUserId, changedProperties);
+                this.listener.OnUserPropertiesChanged(channelName, targetUserId, senderId, changedProperties);
+            }
+            else
+            {
+                channel.ReadChannelProperties(changedProperties);
+                this.listener.OnChannelPropertiesChanged(channelName, senderId, changedProperties);
+            }
+        }
+
+        private void HandleErrorInfoEvent(EventData eventData)
+        {
+            string channel = eventData.Parameters[ChatParameterCode.Channel] as string;
+            string msg = eventData.Parameters[ChatParameterCode.DebugMessage] as string;
+            object data = eventData.Parameters[ChatParameterCode.DebugData];
+            this.listener.OnErrorInfo(channel, msg, data);
+        }
+
+        #endif
     }
 }
